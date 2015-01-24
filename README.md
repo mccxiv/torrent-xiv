@@ -15,4 +15,4 @@ torrent.on('done', console.log);
 ```
 
 ## Status
-NOT functional
+Not quite production ready

@@ -1,7 +1,8 @@
 {
   "name": "torrent-xiv",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "dependencies": {
+    "filesize": "^3.0.1",
     "parse-torrent": "^3.0.1",
     "torrent-stream": "^0.16.2",
     "underscore": "^1.7.0",

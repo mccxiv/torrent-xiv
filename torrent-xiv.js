@@ -3,55 +3,21 @@ var _ =				require('underscore');
 var os =			require('os');
 var path =			require('path');
 var util = 			require('util');
+var filesize = 		require('filesize');
 var EventEmitter = 	require('events').EventEmitter;
 var parseTorrent = 	require('parse-torrent');
 var TorrentStream = require('torrent-stream');
 
 /**
- * Provides documentation for the Torrent class
- *
- * @interface
- */
-function TorrentInterface()
-{
-	/**
-	 * Obtain metadata and progress and status of a torrent.
-	 *
-	 * @returns {{source: *, infoHash: string, name: string, paused: boolean, files: string[]}}
-	 */
-	this.getInfo = function() {};
-
-
-	this.getTrafficStats = function() {};
-
-	/**
-	 * Stop downloading and uploading
-	 * Deselects all files in the torrent
-	 */
-	this.pause = function() {};
-
-	/**
-	 * Start downloading and uploading
-	 * Selects all files for download
-	 */
-	this.start = function() {};
-
-	this.getLargestFile = function() {};
-
-	this.destroy = function() {};
-}
-
-/**
  * Downloads a torrent
  *
  * @constructor
- * @implements TorrentInterface
  * @param source 	{Buffer | string | {source: Buffer | string}}
  * @param options 	{Object}
  *
  * @emits Torrent#progress			The torrent has downloaded a piece. 		Passes getInfo()
  * @emits Torrent#done				Torrent has finished. Can override ready	Passes getInfo()
- * @emits Torrent#stop				Stopped downloading and uploading			Passes getInfo()
+ * @emits Torrent#pause				Stopped downloading and uploading			Passes getInfo()
  * @emits Torrent#start				Started downloading and uploading			Passes getInfo()
  * @emits Torrent#stats				Periodic update. (opts.updateFrequency)		Passes getStats()
  */
@@ -70,9 +36,26 @@ function Torrent(source, options)
 	var defaults =	{connections: 100, uploads: 10, path: os.tmpdir(), mkdir: true, seed: false};
 	var infoCache = {};
 
+	/**
+	 *
+	 * @returns {{
+	 * 		source: 	Buffer |string | {source: Buffer | string},
+	 * 		infoHash: 	string,
+	 * 		name: 		string,
+	 * 		directory: 	string,
+	 *		percentage: number,
+	 * 		files: {
+	 * 			name: string,
+     *  		bytes: number,
+     *  		inTorrentPath: string,
+     *  		humanBytes: string,
+     *  		path: string
+	 *		}[]
+	 * }}
+	 */
 	this.getInfo = function()
 	{
-		return !paused? {
+		return ready? {
 			source: source,
 			infoHash: engine.torrent.infoHash,
 			name: engine.torrent.name,
@@ -83,16 +66,18 @@ function Torrent(source, options)
 	};
 
 	/**
-	 * Obtain network traffic status of the torrent
+	 * Obtain network traffic status of the torrent.
+	 * Only returns data when the torrent is active.
+	 * i.e. not while paused or done.
 	 *
 	 * @returns {{
-	 * 		percentage: number,
-	 * 		downSpeed: number,
-	 * 		upSpeed: number,
-	 *      downloaded: number,
-	 *      uploaded: number,
-	 *      peersTotal: number,
-	 * 		peersUnchoked: number
+	 * 		percentage: 	number,
+	 * 		downSpeed: 		number,
+	 * 		upSpeed: 		number,
+	 *      downloaded: 	number,
+	 *      uploaded: 		number,
+	 *      peersTotal: 	number,
+	 * 		peersUnchoked:	number
 	 * } | {}}
 	 */
 	this.getTrafficStats = function()
@@ -109,7 +94,10 @@ function Torrent(source, options)
 	};
 
 	/**
-	 * Completely stops all downloading and uploading
+	 * Stops all downloading and uploading.
+	 * Current implementation destroys the engine and thus all connections
+	 * because torrent-stream hasn't implemented pausing yet.
+	 * So resuming (.start) will be slow.
 	 */
 	this.pause = function(cb)
 	{
@@ -126,9 +114,6 @@ function Torrent(source, options)
 		});
 	};
 
-	/**
-	 * Starts the engine and the downloading
-	 */
 	this.start = function()
 	{
 		if (!paused || busy) return;
@@ -176,7 +161,6 @@ function Torrent(source, options)
 
 	function finish()
 	{
-		console.log('!finish');
 		done = true;
 		whenReady(function()
 		{
@@ -188,9 +172,10 @@ function Torrent(source, options)
 	}
 
 	/**
-	 * Emit event and pass getInfo()
+	 * Emits event and passes getInfo() to it
 	 * @param eventName {string}
-	 * @param [throttled] {boolean} - Use the throttled version? (at most every second)
+	 * @param [throttled] {boolean} - Use the throttled version?
+	 * 		  Throttled version only fires at most once every second
 	 */
 	function emitInfo(eventName, throttled)
 	{
@@ -199,7 +184,7 @@ function Torrent(source, options)
 	}
 
 	/**
-	 * Call a function now if ready, or when ready
+	 * Calls a function now if ready, or later when ready
 	 * @param fn {function}
 	 */
 	function whenReady(fn)
@@ -216,22 +201,21 @@ function Torrent(source, options)
 	 */
 	function makeUserFiles()
 	{
-		console.log('making user files');
-		console.log('paused', paused);
-		console.log('ready', ready);
-
-		return engine.files.map(function(file)
+		files = engine.files.map(function(file)
 		{
 			return {
-				torrentPath: file.path,
+				name: file.name,
+				bytes: file.length,
+				inTorrentPath: file.path,
+				humanBytes: filesize(file.length),
 				path: path.join(engine.path, file.path)
 			};
 		});
 	}
 
 	/**
-	 * Checks that the source is valid and
-	 * applies defaults to the options parameter
+	 * Checks that the source from the user is valid and
+	 * applies defaults to the options parameter that the user provided
 	 */
 	function processInput()
 	{
