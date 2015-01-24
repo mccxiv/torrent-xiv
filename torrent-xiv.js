@@ -62,7 +62,7 @@ function Torrent(source, options)
 			name: engine.torrent.name,
 			directory: engine.path,
 			files: files,
-			active: paused,
+			active: !paused,
 			percentage: getPercentage()
 		} : infoCache;
 	};
