@@ -1,0 +1,14 @@
+{
+  "name": "torrent-xiv",
+  "version": "0.0.1",
+  "dependencies": {
+    "parse-torrent": "^3.0.1",
+    "torrent-stream": "^0.16.2",
+    "underscore": "^1.7.0",
+    "util": "^0.10.3"
+  },
+  "devDependencies": {
+    "chai": "^1.10.0",
+    "mocha": "^2.1.0"
+  }
+}
