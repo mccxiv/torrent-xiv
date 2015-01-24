@@ -30,7 +30,7 @@ function Torrent(source, options)
 	var ready = 	false;
 	var paused = 	true; // initial state must be true.
 	var engine = 	{};
-	var thrEmit = 	_(emitInfo).throttle(1000);
+	var thrEmit = 	_(emitInfo).throttle(1000, {trailing: false});
 	var torrent =	this;
 	var verified = 	0;
 	var defaults =	{connections: 100, uploads: 10, path: os.tmpdir(), mkdir: true, seed: false};
@@ -109,8 +109,8 @@ function Torrent(source, options)
 			paused = true;
 			ready = false;
 			busy = false;
-			cb(torrent.getInfo());
 			emitInfo('pause');
+			if (cb) cb(torrent.getInfo());
 		});
 	};
 
