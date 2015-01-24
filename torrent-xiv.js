@@ -43,6 +43,7 @@ function Torrent(source, options)
 	 * 		infoHash: 	string,
 	 * 		name: 		string,
 	 * 		directory: 	string,
+	 * 		active:		boolean,
 	 *		percentage: number,
 	 * 		files: {
 	 * 			name: string,
@@ -61,6 +62,7 @@ function Torrent(source, options)
 			name: engine.torrent.name,
 			directory: engine.path,
 			files: files,
+			active: paused,
 			percentage: getPercentage()
 		} : infoCache;
 	};
