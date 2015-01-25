@@ -75,3 +75,7 @@ Status:
 
 ## Project status
 Works but not mature, API is still evolving
+
+## Planned features
+- More versatile storage options
+- streams?
