@@ -16,7 +16,7 @@ torrent.on('done', console.log);
 ## API
 
 #### Methods
-- ```new Torrent(source, opts)``` - constructs torrent and activates it, unless ```opts.start``` is false
+- ```new Torrent(source, opts)``` - constructs torrent and starts it, unless ```opts.start``` is false
 - ```torrent.start()``` - activates the torrent. No need to call it unless you've paused. (creates engine)
 - ```torrent.pause()``` - closes all connections (engine is destroyed)
 
@@ -26,16 +26,16 @@ torrent.on('done', console.log);
 - ```torrent.on('progress', function(status){})``` - a piece has been downloaded
 - ```torrent.on('stats', function(stats){})``` - emitted every ```opts.statFrequency``` while active
 - ```torrent.on('done', function(metadata){})``` - all files have been downloaded
-Sample outputs
+
 ```
-torrent.on('progress', console.log)
+On progress:
 
 { active:       (boolean,
   percentage:   (number: 23.87),
   infoHash:     (torrent hash) }
 ```
 ```
-torrent.on('stats', console.log)
+On stats:
 
 { infoHash:      (torrent hash),
   percentage:    (number: 23.87),
@@ -51,7 +51,7 @@ torrent.on('stats', console.log)
 - ```torrent.metadata``` general torrent data, does not change
 - ```torrent.status``` whether it's paused or active, and percentage
 ```
-console.log(torrent.metadata)
+Metadata:
 
 { name:         (torrent name),
   source:       (magnet link || Buffer),
@@ -66,11 +66,11 @@ console.log(torrent.metadata)
 ```
 
 ```
-console.log(torrent.status)
+Status:
 
-{ active:       (boolean, whether the torrent is downloading or paused),
-  infoHash:     (torrent hash),
-  percentage:   (float with 2 decimal precision. e.g. 23.87) }
+{ active:       (boolean,
+  percentage:   (number: 23.87),
+  infoHash:     (torrent hash) }
 ```
 
 ## Project status
