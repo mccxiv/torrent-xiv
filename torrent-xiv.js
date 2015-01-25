@@ -1,41 +1,41 @@
 
-var _ =				require('underscore');
-var os =			require('os');
-var path =			require('path');
-var util = 			require('util');
-var filesize = 		require('filesize');
-var EventEmitter = 	require('events').EventEmitter;
-var parseTorrent = 	require('parse-torrent');
+var _ =             require('underscore');
+var os =            require('os');
+var path =          require('path');
+var util =          require('util');
+var filesize =      require('filesize');
+var EventEmitter =  require('events').EventEmitter;
+var parseTorrent =  require('parse-torrent');
 var TorrentStream = require('torrent-stream');
 
 /**
  * Downloads a torrent
  *
  * @constructor
- * @param source 	{Buffer | string | {source: Buffer | string}}
- * @param options 	{Object}
+ * @param source    {Buffer | string | {source: Buffer | string}}
+ * @param options   {Object}
  *
- * @emits Torrent#active			Started downloading and uploading			Passes getInfo()
- * @emits Torrent#inactive			Stopped downloading and uploading			Passes getInfo()
- * @emits Torrent#progress			The torrent has downloaded a piece. 		Passes getInfo()
- * @emits Torrent#stats				Periodic update. (opts.statFrequency)		Passes getStats()
- * @emits Torrent#complete			Torrent has finished. Can override ready	Passes getInfo()
+ * @emits Torrent#active	 Started downloading and uploading         Passes getInfo()
+ * @emits Torrent#inactive   Stopped downloading and uploading         Passes getInfo()
+ * @emits Torrent#progress   The torrent has downloaded a piece.       Passes getInfo()
+ * @emits Torrent#stats      Periodic update. (opts.statFrequency)     Passes getStats()
+ * @emits Torrent#complete   Torrent has finished. Can override ready  Passes getInfo()
  */
 function Torrent(source, options)
 {
-    var opts = 		options || {};
-    var busy = 		false;
-    var cache = 	{}; // used by various functions
-    var ready = 	false;
-    var paused = 	true; // initial state must be true
-    var engine = 	{};
-    var torrent =	this;
-    var complete = 	false;
-    var verified = 	0;
-    var defaults =	{connections: 100, uploads: 10, path: os.tmpdir(), mkdir: true, seed: false, start: true, statFrequency: 2000};
+    var opts =		options || {};
+    var busy =  	false;
+    var cache =  	{}; // used by various functions
+    var ready =   	false;
+    var paused =    true; // initial state must be true
+    var engine =    {};
+    var torrent =   this;
+    var complete =  false;
+    var verified =  0;
+    var defaults =  {connections: 100, uploads: 10, path: os.tmpdir(), mkdir: true, seed: false, start: true, statFrequency: 2000};
 
     this.metadata = {};
-    this.status =	{};
+    this.status =   {};
 
     this.pause = function(cb)
     {
@@ -94,11 +94,11 @@ function Torrent(source, options)
     /**
      * Obtain torrent metadata
      * @returns {{
-     * 		name: string,
-     * 		files: Array,
-     * 		infoHash: string
-     * 		directory: string,
-     * 		source: Buffer | string,
+     *     name: string,
+     *     files: Array,
+     *     infoHash: string
+     *     directory: string,
+     *     source: Buffer | string,
      * }}
      */
     function getMetadata()
@@ -132,27 +132,27 @@ function Torrent(source, options)
      * Only returns data when the torrent is active.
      * i.e. not while paused or complete.
      * @returns {{
-     * 		percentage: 	number,
-     * 		downSpeed: 		number,
-     * 		upSpeed: 		number,
-     *      downloaded: 	number,
-     *      uploaded: 		number,
-     *      peersTotal: 	number,
-     * 		peersUnchoked:	number
+     *     percentage:     number,
+     *     downSpeed:      number,
+     *     upSpeed:        number,
+     *     downloaded:     number,
+     *     uploaded:       number,
+     *     peersTotal:     number,
+     *     peersUnchoked:  number
      * }}
      */
     function getTrafficStats()
     {
         var s = ready? engine.swarm : null;
         return {
-            infoHash:		torrent.metadata.infoHash,
-            percentage: 	getPercentage(),
-            downSpeed: 		ready? s.downloadSpeed() : 0,
-            upSpeed: 		ready? s.uploadSpeed() : 0,
-            downloaded:		ready? s.downloaded : 0,
-            uploaded: 		ready? s.uploaded : 0,
-            peersTotal: 	ready? s.wires.length : 0,
-            peersUnchoked: 	ready? s.wires.reduce(function(prev, wire) {return prev + !wire.peerChoking;}, 0) : 0
+            infoHash:       torrent.metadata.infoHash,
+            percentage:     getPercentage(),
+            downSpeed:      ready? s.downloadSpeed() : 0,
+            upSpeed:        ready? s.uploadSpeed() : 0,
+            downloaded:     ready? s.downloaded : 0,
+            uploaded:       ready? s.uploaded : 0,
+            peersTotal:     ready? s.wires.length : 0,
+            peersUnchoked:  ready? s.wires.reduce(function(prev, wire) {return prev + !wire.peerChoking;}, 0) : 0
         };
     }
 
@@ -239,7 +239,7 @@ function Torrent(source, options)
 
     function stopBroadcastingStats()
     {
-		clearInterval(cache.statsInterval);
+        clearInterval(cache.statsInterval);
     }
 
     processInput();
