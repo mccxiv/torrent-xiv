@@ -15,11 +15,11 @@ var TorrentStream = require('torrent-stream');
  * @param source 	{Buffer | string | {source: Buffer | string}}
  * @param options 	{Object}
  *
+ * @emits Torrent#active			Started downloading and uploading			Passes getInfo()
+ * @emits Torrent#inactive			Stopped downloading and uploading			Passes getInfo()
  * @emits Torrent#progress			The torrent has downloaded a piece. 		Passes getInfo()
+ * @emits Torrent#stats				Periodic update. (opts.statFrequency)		Passes getStats()
  * @emits Torrent#done				Torrent has finished. Can override ready	Passes getInfo()
- * @emits Torrent#pause				Stopped downloading and uploading			Passes getInfo()
- * @emits Torrent#start				Started downloading and uploading			Passes getInfo()
- * @emits Torrent#stats				Periodic update. (opts.updateFrequency)		Passes getStats()
  */
 function Torrent(source, options)
 {
@@ -32,7 +32,8 @@ function Torrent(source, options)
 	var engine = 	{};
 	var torrent =	this;
 	var verified = 	0;
-	var defaults =	{connections: 100, uploads: 10, path: os.tmpdir(), mkdir: true, seed: false, start: true};
+	var defaults =	{connections: 100, uploads: 10, path: os.tmpdir(), mkdir: true, seed: false, start: true, statFrequency: 2000};
+
 	this.metadata = {};
 	this.status =	{};
 
@@ -46,7 +47,7 @@ function Torrent(source, options)
 			ready = false;
 			busy = false;
 			torrent.status = getStatus();
-			torrent.emit('pause');
+			torrent.emit('inactive');
 			if (cb) cb();
 		});
 	};
@@ -59,6 +60,9 @@ function Torrent(source, options)
 		startEngine();
 	};
 
+	/**
+	 * Starts a torrent-stream instance and immediately begins the download
+	 */
 	function startEngine()
 	{
 		engine = new TorrentStream(source, opts);
@@ -69,7 +73,8 @@ function Torrent(source, options)
 			torrent.metadata = getMetadata();
 			torrent.status = getStatus();
 			if (!done) engine.files.forEach(function(file) {file.select();});
-			torrent.emit('start');
+			torrent.emit('_engineReady');
+			torrent.emit('active');
 		});
 
 		engine.on('download', function()
@@ -140,7 +145,7 @@ function Torrent(source, options)
 	{
 		var s = ready? engine.swarm : null;
 		return {
-			infoHash:		torrent.getMetadata().infoHash,
+			infoHash:		torrent.metadata.infoHash,
 			percentage: 	getPercentage(),
 			downSpeed: 		ready? s.downloadSpeed() : 0,
 			upSpeed: 		ready? s.uploadSpeed() : 0,
@@ -172,7 +177,7 @@ function Torrent(source, options)
 		}
 		else
 		{
-			torrent.once('start', finish)
+			torrent.once('_engineReady', finish)
 		}
 	}
 
@@ -229,7 +234,7 @@ function Torrent(source, options)
 		cache.statsInterval = setInterval(function()
 		{
 			torrent.emit('stats', getTrafficStats());
-		}, 2000)
+		}, opts.statFrequency)
 	}
 
 	function stopBroadcastingStats()
@@ -239,8 +244,8 @@ function Torrent(source, options)
 
 	processInput();
 	if (opts.start) this.start();
-	torrent.on('ready', startBroadcastingStats);
-	torrent.on('pause', stopBroadcastingStats);
+	torrent.on('active', startBroadcastingStats);
+	torrent.on('inactive', stopBroadcastingStats);
 }
 
 util.inherits(Torrent, EventEmitter);
