@@ -20,8 +20,6 @@ torrent.on('done', console.log);
 - ```torrent.start()``` - activates the torrent. No need to call it unless you've paused. (creates engine)
 - ```torrent.pause()``` - closes all connections (engine is destroyed)
 
----
-
 #### Events  
 - ```torrent.on('active', fn)``` - triggered by ```.start()```
 - ```torrent.on('inactive', fn)``` - triggered by ```.pause()``` and on ```done```
@@ -49,8 +47,6 @@ torrent.on('stats', console.log)
   peersUnchoked: (number) }
 ```
 
----
-
 #### Properties  
 - ```torrent.metadata``` general torrent data, does not change
 - ```torrent.status``` whether it's paused or active, and percentage
@@ -76,7 +72,6 @@ console.log(torrent.status)
   infoHash:     (torrent hash),
   percentage:   (float with 2 decimal precision. e.g. 23.87) }
 ```
----
 
 ## Project status
 Works but not mature, API is still evolving
