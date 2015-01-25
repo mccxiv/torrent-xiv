@@ -26,93 +26,28 @@ function Torrent(source, options)
 	var opts = 		options || {};
 	var done = 		false;
 	var busy = 		false;
-	var files = 	{};
+	var cache = 	{}; // used by various functions
 	var ready = 	false;
-	var paused = 	true; // initial state must be true.
+	var paused = 	true; // initial state must be true
 	var engine = 	{};
-	var thrEmit = 	_(emitInfo).throttle(1000, {trailing: false});
 	var torrent =	this;
 	var verified = 	0;
-	var defaults =	{connections: 100, uploads: 10, path: os.tmpdir(), mkdir: true, seed: false};
-	var infoCache = {};
+	var defaults =	{connections: 100, uploads: 10, path: os.tmpdir(), mkdir: true, seed: false, start: true};
+	this.metadata = {};
+	this.status =	{};
 
-	/**
-	 *
-	 * @returns {{
-	 * 		source: 	Buffer |string | {source: Buffer | string},
-	 * 		infoHash: 	string,
-	 * 		name: 		string,
-	 * 		directory: 	string,
-	 * 		active:		boolean,
-	 *		percentage: number,
-	 * 		files: {
-	 * 			name: string,
-     *  		bytes: number,
-     *  		inTorrentPath: string,
-     *  		humanBytes: string,
-     *  		path: string
-	 *		}[]
-	 * }}
-	 */
-	this.getInfo = function()
-	{
-		return ready? {
-			source: source,
-			infoHash: engine.torrent.infoHash,
-			name: engine.torrent.name,
-			directory: engine.path,
-			files: files,
-			active: !paused,
-			percentage: getPercentage()
-		} : infoCache;
-	};
-
-	/**
-	 * Obtain network traffic status of the torrent.
-	 * Only returns data when the torrent is active.
-	 * i.e. not while paused or done.
-	 *
-	 * @returns {{
-	 * 		percentage: 	number,
-	 * 		downSpeed: 		number,
-	 * 		upSpeed: 		number,
-	 *      downloaded: 	number,
-	 *      uploaded: 		number,
-	 *      peersTotal: 	number,
-	 * 		peersUnchoked:	number
-	 * } | {}}
-	 */
-	this.getTrafficStats = function()
-	{
-		if (!ready) return {};
-
-		var s = engine.swarm;
-		return {
-			percentage: getPercentage(),
-			downSpeed: s.downloadSpeed(),	upSpeed: s.uploadSpeed(),
-			downloaded: s.downloaded,		uploaded: s.uploaded,
-			peersTotal: s.wires.length,		peersUnchoked: s.wires.reduce(function(prev, wire) {return prev + !wire.peerChoking;}, 0)
-		};
-	};
-
-	/**
-	 * Stops all downloading and uploading.
-	 * Current implementation destroys the engine and thus all connections
-	 * because torrent-stream hasn't implemented pausing yet.
-	 * So resuming (.start) will be slow.
-	 */
 	this.pause = function(cb)
 	{
 		if (paused || busy) return;
 		busy = true;
-		infoCache = torrent.getInfo();
 		engine.destroy(function()
 		{
 			paused = true;
 			ready = false;
 			busy = false;
-			emitInfo('pause');
-			if (cb) cb(torrent.getInfo());
+			torrent.status = getStatus();
+			torrent.emit('pause');
+			if (cb) cb();
 		});
 	};
 
@@ -120,6 +55,7 @@ function Torrent(source, options)
 	{
 		if (!paused || busy) return;
 		paused = false;
+		torrent.status = getStatus();
 		startEngine();
 	};
 
@@ -130,80 +66,134 @@ function Torrent(source, options)
 		engine.on('ready', function()
 		{
 			ready = true;
-			makeUserFiles();
-			if (!done) selectFiles();
-			emitInfo('ready');
-			emitInfo('start');
+			torrent.metadata = getMetadata();
+			torrent.status = getStatus();
+			if (!done) engine.files.forEach(function(file) {file.select();});
+			torrent.emit('start');
 		});
 
 		engine.on('download', function()
 		{
-			emitInfo('progress', true);
+			torrent.status = getStatus();
+			emitProgressThrottled();
 		});
 
 		engine.on('verify', function()
 		{
 			verified++;
+			torrent.status = getStatus(); // inefficient during initial verify
 			if (verified === engine.torrent.pieces.length) finish();
 		});
 	}
 
-	function getPercentage()
+	/**
+	 * Obtain torrent metadata
+	 * @returns {{
+	 * 		name: string,
+	 * 		files: Array,
+	 * 		infoHash: string
+	 * 		directory: string,
+	 * 		source: Buffer | string,
+	 * }}
+	 */
+	function getMetadata()
 	{
-		return Math.floor((verified/engine.torrent.pieces.length) * 10000)/100;
+		var meta = {
+			source: source,
+			files: getFiles(),
+			directory: engine.path,
+			name: engine.torrent.name,
+			infoHash: engine.torrent.infoHash
+		};
+		return jsonCopy(meta);
 	}
 
-	function selectFiles()
+	/**
+	 * Obtain torrent status
+	 * @returns {{active: boolean, percentage: number, infoHash: string}}
+	 */
+	function getStatus()
 	{
-		engine.files.forEach(function(file)
-		{
-			file.select();
-		});
+		var status = {
+			active: !paused,
+			percentage: getPercentage(),
+			infoHash: torrent.metadata.infoHash
+		};
+		return jsonCopy(status);
+	}
+
+	/**
+	 * Obtain network traffic status of the torrent.
+	 * Only returns data when the torrent is active.
+	 * i.e. not while paused or done.
+	 * @returns {{
+	 * 		percentage: 	number,
+	 * 		downSpeed: 		number,
+	 * 		upSpeed: 		number,
+	 *      downloaded: 	number,
+	 *      uploaded: 		number,
+	 *      peersTotal: 	number,
+	 * 		peersUnchoked:	number
+	 * }}
+	 */
+	function getTrafficStats()
+	{
+		var s = ready? engine.swarm : null;
+		return {
+			infoHash:		torrent.getMetadata().infoHash,
+			percentage: 	getPercentage(),
+			downSpeed: 		ready? s.downloadSpeed() : 0,
+			upSpeed: 		ready? s.uploadSpeed() : 0,
+			downloaded:		ready? s.downloaded : 0,
+			uploaded: 		ready? s.uploaded : 0,
+			peersTotal: 	ready? s.wires.length : 0,
+			peersUnchoked: 	ready? s.wires.reduce(function(prev, wire) {return prev + !wire.peerChoking;}, 0) : 0
+		};
+	}
+
+	/**
+	 * Obtain overall torrent percentage as a float, 2 decimal places
+	 * @returns {number}
+	 */
+	function getPercentage()
+	{
+		return ready? Math.floor((verified/engine.torrent.pieces.length) * 10000)/100 : torrent.status.percentage;
 	}
 
 	function finish()
 	{
 		done = true;
-		whenReady(function()
+		if (ready)
 		{
 			torrent.pause(function()
 			{
-				emitInfo('done');
+				torrent.emit('done');
 			});
-		});
+		}
+		else
+		{
+			torrent.once('start', finish)
+		}
+	}
+
+	function emitProgressThrottled()
+	{
+		if (!cache.emitProgressThrottled)
+		{
+			function emit() {torrent.emit('progress', torrent.status);}
+			cache.emitProgressThrottled = _(emit).throttle(1000, {trailing: false});
+		}
+
+		cache.emitProgressThrottled();
 	}
 
 	/**
-	 * Emits event and passes getInfo() to it
-	 * @param eventName {string}
-	 * @param [throttled] {boolean} - Use the throttled version?
-	 * 		  Throttled version only fires at most once every second
+	 * Returns a copy of torrent-stream's files converted to our format
+	 * @returns {{}} TODO document
 	 */
-	function emitInfo(eventName, throttled)
+	function getFiles()
 	{
-		if (throttled) thrEmit(eventName);
-		else torrent.emit(eventName, torrent.getInfo());
-	}
-
-	/**
-	 * Calls a function now if ready, or later when ready
-	 * @param fn {function}
-	 */
-	function whenReady(fn)
-	{
-		if (ready) fn();
-		// notice we're using torrent, not engine.
-		// engine might not exist yet so we're proxying
-		else {torrent.once('ready', fn)}
-	}
-
-	/**
-	 * Convert torrent-stream files to our files
-	 * @returns {string[]}
-	 */
-	function makeUserFiles()
-	{
-		files = engine.files.map(function(file)
+		var fileList = engine.files.map(function(file)
 		{
 			return {
 				name: file.name,
@@ -213,10 +203,12 @@ function Torrent(source, options)
 				path: path.join(engine.path, file.path)
 			};
 		});
+
+		return jsonCopy(fileList);
 	}
 
 	/**
-	 * Checks that the source from the user is valid and
+	 * Checks that the torrent source from the user is valid and
 	 * applies defaults to the options parameter that the user provided
 	 */
 	function processInput()
@@ -227,8 +219,28 @@ function Torrent(source, options)
 		if (opts.mkdir) opts.path = path.join(opts.path, parsed.infoHash);
 	}
 
+	function jsonCopy(obj)
+	{
+		return JSON.parse(JSON.stringify(obj));
+	}
+
+	function startBroadcastingStats()
+	{
+		cache.statsInterval = setInterval(function()
+		{
+			torrent.emit('stats', getTrafficStats());
+		}, 2000)
+	}
+
+	function stopBroadcastingStats()
+	{
+		clearInterval(cache.statsInterval);
+	}
+
 	processInput();
-	this.start();
+	if (opts.start) this.start();
+	torrent.on('ready', startBroadcastingStats);
+	torrent.on('pause', stopBroadcastingStats);
 }
 
 util.inherits(Torrent, EventEmitter);
