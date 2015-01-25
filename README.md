@@ -30,7 +30,7 @@ torrent.on('done', console.log);
 ```
 On progress:
 
-{ active:       (boolean,
+{ active:       (boolean),
   percentage:   (number: 23.87),
   infoHash:     (torrent hash) }
 ```
@@ -68,7 +68,7 @@ Metadata:
 ```
 Status:
 
-{ active:       (boolean,
+{ active:       (boolean),
   percentage:   (number: 23.87),
   infoHash:     (torrent hash) }
 ```
