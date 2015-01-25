@@ -19,18 +19,18 @@ var TorrentStream = require('torrent-stream');
  * @emits Torrent#inactive			Stopped downloading and uploading			Passes getInfo()
  * @emits Torrent#progress			The torrent has downloaded a piece. 		Passes getInfo()
  * @emits Torrent#stats				Periodic update. (opts.statFrequency)		Passes getStats()
- * @emits Torrent#done				Torrent has finished. Can override ready	Passes getInfo()
+ * @emits Torrent#complete				Torrent has finished. Can override ready	Passes getInfo()
  */
 function Torrent(source, options)
 {
 	var opts = 		options || {};
-	var done = 		false;
 	var busy = 		false;
 	var cache = 	{}; // used by various functions
 	var ready = 	false;
 	var paused = 	true; // initial state must be true
 	var engine = 	{};
 	var torrent =	this;
+	var complete = 	false;
 	var verified = 	0;
 	var defaults =	{connections: 100, uploads: 10, path: os.tmpdir(), mkdir: true, seed: false, start: true, statFrequency: 2000};
 
@@ -72,7 +72,7 @@ function Torrent(source, options)
 			ready = true;
 			torrent.metadata = getMetadata();
 			torrent.status = getStatus();
-			if (!done) engine.files.forEach(function(file) {file.select();});
+			if (!complete) engine.files.forEach(function(file) {file.select();});
 			torrent.emit('_engineReady');
 			torrent.emit('active');
 		});
@@ -130,7 +130,7 @@ function Torrent(source, options)
 	/**
 	 * Obtain network traffic status of the torrent.
 	 * Only returns data when the torrent is active.
-	 * i.e. not while paused or done.
+	 * i.e. not while paused or complete.
 	 * @returns {{
 	 * 		percentage: 	number,
 	 * 		downSpeed: 		number,
@@ -167,12 +167,12 @@ function Torrent(source, options)
 
 	function finish()
 	{
-		done = true;
+		complete = true;
 		if (ready)
 		{
 			torrent.pause(function()
 			{
-				torrent.emit('done');
+				torrent.emit('complete');
 			});
 		}
 		else

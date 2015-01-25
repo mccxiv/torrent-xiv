@@ -3,14 +3,11 @@
 A high level torrent client for node
 
 ## Usage
-
-```npm install --save torrent-xiv```
-
 ```
 var Torrent = require('torrent-xiv');
 
 var torrent = new Torrent('magnet:link-example');
-torrent.on('done', console.log);
+torrent.on('complete', console.log);
 ```
 
 ## API
@@ -22,10 +19,10 @@ torrent.on('done', console.log);
 
 #### Events  
 - ```torrent.on('active', fn)``` - triggered by ```.start()```
-- ```torrent.on('inactive', fn)``` - triggered by ```.pause()``` and on ```done```
+- ```torrent.on('inactive', fn)``` - triggered by ```.pause()``` and on ```complete```
 - ```torrent.on('progress', function(status){})``` - a piece has been downloaded
 - ```torrent.on('stats', function(stats){})``` - emitted every ```opts.statFrequency``` while active
-- ```torrent.on('done', function(metadata){})``` - all files have been downloaded
+- ```torrent.on('complete', function(metadata){})``` - all files have been downloaded
 
 ```
 On progress:
