@@ -23,7 +23,7 @@ opts:
 { connections: 100,      // Max number of connections
   uploads: 10,           // Max number of upload slots
   path: os.tmpdir(),     // Directory to save files to
-  mkdir: true,           // Create a directory for the torrent? Its name will be the info hash
+  mkdir: true,           // Make a directory in opts.path? Name will be the info hash
   seed: false,           // NYI - Seed the torrent when done instead of quitting?
   start: true,           // Auto-start the download?
   statFrequency: 2000 }  // How often to broadcast 'stats'
