@@ -7,13 +7,15 @@ High level torrent client for node.js
 var Torrent = require('torrent-xiv');
 
 var torrent = new Torrent('magnet:link-example');
-torrent.on('complete', console.log);
+torrent.on('progress', console.log); // prints torrent.status()
+torrent.on('complete', console.log); // prints torrent.metadata
 ```
+
 
 ## API
 
-#### Methods & Properties
-- ```new Torrent(source, opts)``` - constructs torrent and starts it. ```opts```:
+#### Constructor
+- ```new Torrent(source, opts)``` - creates torrent and starts it, ```opts``` defaults:
 
 ```
 { connections: 100,      // Max number of connections
@@ -25,7 +27,22 @@ torrent.on('complete', console.log);
   statFrequency: 2000 }  // How often to broadcast 'stats'
 ```
 
-- ```torrent.metadata``` general torrent data, does not change
+#### Events  
+
+- ```torrent.on('metadata', fn)``` - obtained torrent info from peers, passes ```.metadata``` to ```fn```
+
+- ```torrent.on('progress', fn)``` - data was downloaded, passes ```.status()``` to ```fn```
+
+- ```torrent.on('stats', fn)``` - emits periodically while active, passes ```.stats()``` to ```fn```
+
+- ```torrent.on('complete', fn)``` - all files have been downloaded, passes ```.metadata``` to ```fn```
+
+
+- ```torrent.on('active', fn)``` - triggered by ```.start()``` once the download begins
+- ```torrent.on('inactive', fn)``` - triggered by ```.pause()``` and on ```complete```
+
+#### Properties & Methods
+- ```torrent.metadata``` general torrent data, available after ```metadata``` event fires
 
 ```
 { name:         (torrent name),
@@ -64,51 +81,10 @@ torrent.on('complete', console.log);
 - ```torrent.pause()``` - closes all connections.
 
 
-
-#### Events  
-
-- ```torrent.on('progress', fn)``` - data was downloaded, passes ```.status()``` to ```fn```:
-
-```
-{ active:       (boolean),
-  percentage:   (number: 23.87),
-  infoHash:     (torrent hash) }
-```
-
-
-- ```torrent.on('stats', fn)``` - emits every ```opts.statFrequency``` while active, passes ```.stats()``` to ```fn```:
-
-```
-{ infoHash:      (torrent hash),
-  downSpeed:     (number),
-  upSpeed:       (number),
-  downloaded:    (number),
-  uploaded:      (number),
-  peersTotal:    (number),
-  peersUnchoked: (number) }
-```
-
-- ```torrent.on('complete', function(metadata){})``` - all files have been downloaded
-
-
-- ```torrent.on('active', fn)``` - triggered by ```.start()``` once the download begins
-- ```torrent.on('inactive', fn)``` - triggered by ```.pause()``` and on ```complete```
-
-
-
-
-#### Properties  
-
-```
-status:
-
-
-```
-
-
 ## Project status
 Works but not mature, API is still evolving
 
 ## Planned features
 - More versatile storage options
 - streams?
+- promise interface?
