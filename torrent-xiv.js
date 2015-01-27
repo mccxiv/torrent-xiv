@@ -27,6 +27,7 @@ function Torrent(source, options)
 	var busy =      false;
 	var cache =     {}; // used by various functions
 	var ready =     false;
+	var starts = 	0; // number of times the engine became ready
 	var paused =    true; // initial state must be true
 	var engine =    {};
 	var torrent =   this;
@@ -35,18 +36,17 @@ function Torrent(source, options)
 	var defaults =  {connections: 100, uploads: 10, path: os.tmpdir(), mkdir: true, seed: false, start: true, statFrequency: 2000};
 
 	this.metadata = {};
-	this.status =   {};
 
 	this.pause = function(cb)
 	{
 		if (paused || busy) return;
 		busy = true;
+		cache.status = getStatus();
 		engine.destroy(function()
 		{
 			paused = true;
 			ready = false;
 			busy = false;
-			torrent.status = getStatus();
 			torrent.emit('inactive');
 			if (cb) cb();
 		});
@@ -56,8 +56,17 @@ function Torrent(source, options)
 	{
 		if (!paused || busy) return;
 		paused = false;
-		torrent.status = getStatus();
 		startEngine();
+	};
+
+	this.status = function()
+	{
+		return getStatus();
+	};
+
+	this.stats = function()
+	{
+		return getTrafficStats();
 	};
 
 	/**
@@ -69,24 +78,23 @@ function Torrent(source, options)
 
 		engine.on('ready', function()
 		{
+			starts++;
 			ready = true;
+			engine.files.forEach(function(file) {file.select();});
 			torrent.metadata = getMetadata();
-			torrent.status = getStatus();
-			if (!complete) engine.files.forEach(function(file) {file.select();});
+			if (starts === 1 ) torrent.emit('metadata', torrent.metadata);
 			torrent.emit('_engineReady');
 			torrent.emit('active');
 		});
 
 		engine.on('download', function()
 		{
-			torrent.status = getStatus();
 			emitProgressThrottled();
 		});
 
 		engine.on('verify', function()
 		{
 			verified++;
-			torrent.status = getStatus(); // inefficient during initial verify
 			if (verified === engine.torrent.pieces.length) finish();
 		});
 	}
@@ -162,7 +170,7 @@ function Torrent(source, options)
 	 */
 	function getPercentage()
 	{
-		return ready? Math.floor((verified/engine.torrent.pieces.length) * 10000)/100 : torrent.status.percentage;
+		return ready? Math.floor((verified/engine.torrent.pieces.length) * 10000)/100 : cache.status.percentage;
 	}
 
 	function finish()
@@ -185,7 +193,7 @@ function Torrent(source, options)
 	{
 		if (!cache.emitProgressThrottled)
 		{
-			function emit() {torrent.emit('progress', torrent.status);}
+			function emit() {torrent.emit('progress', getStatus());}
 			cache.emitProgressThrottled = _(emit).throttle(1000, {trailing: false});
 		}
 
@@ -203,7 +211,7 @@ function Torrent(source, options)
 			return {
 				name: file.name,
 				bytes: file.length,
-				inTorrentPath: file.path,
+				torrentPath: file.path,
 				humanBytes: filesize(file.length),
 				path: path.join(engine.path, file.path)
 			};
@@ -229,23 +237,18 @@ function Torrent(source, options)
 		return JSON.parse(JSON.stringify(obj));
 	}
 
-	function startBroadcastingStats()
+	torrent.on('active', function()
 	{
-		cache.statsInterval = setInterval(function()
-		{
-			torrent.emit('stats', getTrafficStats());
-		}, opts.statFrequency)
-	}
+		cache.statsInterval = setInterval(function() {torrent.emit('stats', getTrafficStats());}, opts.statFrequency);
+	});
 
-	function stopBroadcastingStats()
+	torrent.on('inactive', function()
 	{
 		clearInterval(cache.statsInterval);
-	}
+	});
 
 	processInput();
 	if (opts.start) this.start();
-	torrent.on('active', startBroadcastingStats);
-	torrent.on('inactive', stopBroadcastingStats);
 }
 
 util.inherits(Torrent, EventEmitter);

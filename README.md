@@ -1,6 +1,6 @@
 # torrent-xiv
 
-A high level torrent client for node
+High level torrent client for node.js
 
 ## Usage
 ```
@@ -12,14 +12,10 @@ torrent.on('complete', console.log);
 
 ## API
 
-#### Methods
-- ```new Torrent(source, opts)``` - constructs torrent and starts it, unless ```opts.start``` is false
-- ```torrent.start()``` - activates the torrent. No need to call it unless you've paused. (creates engine)
-- ```torrent.pause()``` - closes all connections (engine is destroyed)
+#### Methods & Properties
+- ```new Torrent(source, opts)``` - constructs torrent and starts it. ```opts```:
 
 ```
-opts:
-
 { connections: 100,      // Max number of connections
   uploads: 10,           // Max number of upload slots
   path: os.tmpdir(),     // Directory to save files to
@@ -29,25 +25,33 @@ opts:
   statFrequency: 2000 }  // How often to broadcast 'stats'
 ```
 
-#### Events  
-- ```torrent.on('active', fn)``` - triggered by ```.start()```
-- ```torrent.on('inactive', fn)``` - triggered by ```.pause()``` and on ```complete```
-- ```torrent.on('progress', function(status){})``` - data was downloaded. At most, 1 per second
-- ```torrent.on('stats', function(stats){})``` - emitted every ```opts.statFrequency``` while active
-- ```torrent.on('complete', function(metadata){})``` - all files have been downloaded
+- ```torrent.metadata``` general torrent data, does not change
 
 ```
-on progress:
+{ name:         (torrent name),
+  source:       (magnet link || Buffer, as provided by user),
+  infoHash:     (torrent hash),
+  directory:    (path to directory with saved files),
+  files: 
+   [ { name:            (file name),
+       bytes:           (number of bytes),
+       humanBytes:      (human readable file size, e.g. '2.63 MB'),
+       path:            (direct path to this file, may be absolute or relative),
+       torrentPath:     (path of file relative to torrent directory) } ]}
+```
 
+- ```torrent.status()``` - returns whether it's paused or active, and percentage.
+
+```
 { active:       (boolean),
   percentage:   (number: 23.87),
   infoHash:     (torrent hash) }
 ```
-```
-on stats:
 
+- ```torrent.stats()``` returns transfer speeds, number of peers, etc.
+
+```
 { infoHash:      (torrent hash),
-  percentage:    (number: 23.87),
   downSpeed:     (number),
   upSpeed:       (number),
   downloaded:    (number),
@@ -56,31 +60,51 @@ on stats:
   peersUnchoked: (number) }
 ```
 
-#### Properties  
-- ```torrent.metadata``` general torrent data, does not change
-- ```torrent.status``` whether it's paused or active, and percentage
+- ```torrent.start()``` - activates the torrent. No need to call this unless you've paused.
+- ```torrent.pause()``` - closes all connections.
+
+
+
+#### Events  
+
+- ```torrent.on('progress', fn)``` - data was downloaded, passes ```.status()``` to ```fn```:
 
 ```
-metadata:
-
-{ name:         (torrent name),
-  source:       (magnet link || Buffer),
-  infoHash:     (torrent hash),
-  directory:    (path to directory with saved files),
-  files: 
-   [ { name:            (file name),
-       bytes:           (number of bytes),
-       humanBytes:      (human readable file size, e.g. '2.63 MB'),
-       path:            (direct path to this file, may be absolute or relative),
-       inTorrentPath:   (path of file relative to torrent directory) } ]}
-```
-```
-status:
-
 { active:       (boolean),
   percentage:   (number: 23.87),
   infoHash:     (torrent hash) }
 ```
+
+
+- ```torrent.on('stats', fn)``` - emits every ```opts.statFrequency``` while active, passes ```.stats()``` to ```fn```:
+
+```
+{ infoHash:      (torrent hash),
+  downSpeed:     (number),
+  upSpeed:       (number),
+  downloaded:    (number),
+  uploaded:      (number),
+  peersTotal:    (number),
+  peersUnchoked: (number) }
+```
+
+- ```torrent.on('complete', function(metadata){})``` - all files have been downloaded
+
+
+- ```torrent.on('active', fn)``` - triggered by ```.start()``` once the download begins
+- ```torrent.on('inactive', fn)``` - triggered by ```.pause()``` and on ```complete```
+
+
+
+
+#### Properties  
+
+```
+status:
+
+
+```
+
 
 ## Project status
 Works but not mature, API is still evolving
