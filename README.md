@@ -30,13 +30,9 @@ torrent.on('complete', console.log); // prints torrent.metadata
 #### Events  
 
 - ```torrent.on('metadata', fn)``` - obtained torrent info from peers, passes ```.metadata``` to ```fn```
-
 - ```torrent.on('progress', fn)``` - data was downloaded, passes ```.status()``` to ```fn```
-
 - ```torrent.on('stats', fn)``` - emits periodically while active, passes ```.stats()``` to ```fn```
-
 - ```torrent.on('complete', fn)``` - all files have been downloaded, passes ```.metadata``` to ```fn```
-
 
 - ```torrent.on('active', fn)``` - triggered by ```.start()``` once the download begins
 - ```torrent.on('inactive', fn)``` - triggered by ```.pause()``` and on ```complete```
