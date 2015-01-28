@@ -15,7 +15,7 @@ torrent.on('complete', console.log); // prints torrent.metadata
 ## API
 
 #### Constructor
-- ```new Torrent(source, opts)``` - creates torrent and starts it, ```opts``` defaults:
+```new Torrent(source, opts)``` : creates torrent and starts it, ```opts```:
 
 ```
 { connections: 100,      // Max number of connections
@@ -29,16 +29,16 @@ torrent.on('complete', console.log); // prints torrent.metadata
 
 #### Events  
 
-- ```torrent.on('metadata', fn)``` - obtained torrent info from peers, passes ```.metadata``` to ```fn```
-- ```torrent.on('progress', fn)``` - data was downloaded, passes ```.status()``` to ```fn```
-- ```torrent.on('stats', fn)``` - emits periodically while active, passes ```.stats()``` to ```fn```
-- ```torrent.on('complete', fn)``` - all files have been downloaded, passes ```.metadata``` to ```fn```
+```torrent.on('metadata', fn)``` : obtained torrent info from peers, passes ```.metadata``` to ```fn```  
+```torrent.on('progress', fn)``` : data was downloaded, passes ```.status()``` to ```fn```  
+```torrent.on('stats', fn)``` : emits periodically while active, passes ```.stats()``` to ```fn```  
+```torrent.on('complete', fn)``` : all files have been downloaded, passes ```.metadata``` to ```fn```  
 
-- ```torrent.on('active', fn)``` - triggered by ```.start()``` once the download begins
-- ```torrent.on('inactive', fn)``` - triggered by ```.pause()``` and on ```complete```
+```torrent.on('active', fn)``` : triggered by ```.start()``` once the download begins  
+```torrent.on('inactive', fn)``` : triggered by ```.pause()``` and on ```complete```  
 
 #### Properties & Methods
-- ```torrent.metadata``` general torrent data, available after ```metadata``` event fires
+```torrent.metadata``` : general torrent data, available after ```metadata``` event fires
 
 ```
 { name:         (torrent name),
@@ -53,7 +53,7 @@ torrent.on('complete', console.log); // prints torrent.metadata
        torrentPath:     (path of file relative to torrent directory) } ]}
 ```
 
-- ```torrent.status()``` - returns whether it's paused or active, and percentage.
+```torrent.status()``` : returns whether it's paused or active, and percentage.
 
 ```
 { active:       (boolean),
@@ -61,7 +61,7 @@ torrent.on('complete', console.log); // prints torrent.metadata
   infoHash:     (torrent hash) }
 ```
 
-- ```torrent.stats()``` returns transfer speeds, number of peers, etc.
+```torrent.stats()``` : returns transfer speeds, number of peers, etc.
 
 ```
 { infoHash:      (torrent hash),
@@ -73,8 +73,8 @@ torrent.on('complete', console.log); // prints torrent.metadata
   peersUnchoked: (number) }
 ```
 
-- ```torrent.start()``` - activates the torrent. No need to call this unless you've paused.
-- ```torrent.pause()``` - closes all connections.
+```torrent.start()``` : activates the torrent. No need to call this unless you've paused.  
+```torrent.pause()``` : closes all connections.
 
 
 ## Project status
