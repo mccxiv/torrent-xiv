@@ -3,6 +3,7 @@
 High level torrent client for node.js
 
 ## Usage
+```npm install --save torrent-xiv```  
 ```
 var Torrent = require('torrent-xiv');
 
