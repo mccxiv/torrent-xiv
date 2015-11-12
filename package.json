@@ -7,6 +7,9 @@
   "name": "Andrea Stella",
   "email": "adr.stella@gmail.com"
   },
+  "scripts": {
+    "demo": "node demo/demo.js"
+  },
   "keywords": [
     "torrent",
     "bittorrent"

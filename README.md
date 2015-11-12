@@ -77,11 +77,4 @@ torrent.on('complete', console.log); // prints torrent.metadata
 ```torrent.start()``` : activates the torrent. No need to call this unless you've paused.  
 ```torrent.pause()``` : closes all connections.
 
-
-## Project status
-Works but not mature, API is still evolving
-
-## Planned features
-- More versatile storage options
-- streams?
-- promise interface?
+###### © 2015 Andrea Stella, MIT license.

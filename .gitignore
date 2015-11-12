@@ -1,6 +1,6 @@
-.idea/
-torrents/
-node_modules/
-.npmignore
-torrent-xiv.iml
-demo.js
+/node_modules
+/demo/torrents
+
+# IntelliJ stuff
+/.idea
+/torrent-xiv.iml
