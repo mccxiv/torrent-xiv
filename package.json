@@ -23,6 +23,6 @@
     "filesize": "^3.0.1",
     "underscore": "^1.7.0",
     "parse-torrent": "^3.0.1",
-    "torrent-stream": "^0.16.2"
+    "torrent-stream": "^1.0.0"
   }
 }
