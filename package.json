@@ -7,6 +7,7 @@
   "name": "Andrea Stella",
   "email": "adr.stella@gmail.com"
   },
+  "license": "MIT",
   "scripts": {
     "demo": "node demo/demo.js"
   },
