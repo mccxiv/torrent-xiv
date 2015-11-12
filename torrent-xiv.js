@@ -1,4 +1,3 @@
-
 var _ =             require('underscore');
 var os =            require('os');
 var path =          require('path');
